@@ -1,40 +1,52 @@
-const Session = require('../models/sessionModel');
-const bcrypt = require('bcryptjs');
+const db = require('../db');
+const crypto = require('crypto');
 const sessionController = {};
 
+// Sessions last 50 minutes, matching the old Mongo `expires: 3000` setting.
+const SESSION_TTL_MS = 3000 * 1000;
+
+const selectSession = db.prepare('SELECT userID FROM sessions WHERE cookieID = ? AND createdAt > ?');
+const insertSession = db.prepare('INSERT INTO sessions (cookieID, userID, createdAt) VALUES (?, ?, ?)');
+const deleteSession = db.prepare('DELETE FROM sessions WHERE cookieID = ?');
+const deleteExpired = db.prepare('DELETE FROM sessions WHERE createdAt <= ?');
+
 sessionController.isLoggedIn = (req, res, next) => {
-	console.log('COOKIES MUNCHER :', req.cookies.muncher);
-	Session.find({ cookieID: req.cookies.muncher})
-		.then( session => {
-			if(session[0]){
-				console.log('IS LOGGED IN: ', session[0])
-				res.locals.userId = session[0].userID;
-				return next();
-			}
-			else{
-				console.log('NOT LOGGED IN');
-				return next();
-			}
-		})
-		.catch(err => next('Error in sessionController  isLoggedIn:'+JSON.stringify(err)));
+	const cookieID = req.cookies.muncher;
+	if(!cookieID) return next();
+
+	try {
+		const session = selectSession.get(cookieID, Date.now() - SESSION_TTL_MS);
+		if(session) res.locals.userId = session.userID;
+		return next();
+	}
+	catch(err) {
+		return next('Error in sessionController isLoggedIn: '+err.message);
+	}
 };
 
 
 sessionController.startSession = (req, res, next) =>{
-	console.log('INSIDE START SESSION');
-	res.locals.session = bcrypt.hashSync(res.locals.userName, 10);
-	
-	Session.create({cookieID: res.locals.session, userID: res.locals.userId})
-		.then(session => next())
-		.catch(err => {
-			console.log('ERROR IN SESSION');
-			next('Error in sessionController startSession'+JSON.stringify(err));});
+	const now = Date.now();
+	res.locals.session = crypto.randomBytes(32).toString('hex');
+
+	try {
+		deleteExpired.run(now - SESSION_TTL_MS);
+		insertSession.run(res.locals.session, res.locals.userId, now);
+		return next();
+	}
+	catch(err) {
+		return next('Error in sessionController startSession: '+err.message);
+	}
 };
 
 sessionController.endSession = (req, res, next) =>{
-	Session.deleteOne({cookieID: res.locals.userId})
-		.then(session => next())
-		.catch( err => next('Error in ending session :'+JSON.stringify(err)));
+	try {
+		deleteSession.run(req.cookies.muncher);
+		return next();
+	}
+	catch(err) {
+		return next('Error in ending session: '+err.message);
+	}
 }
 
 module.exports = sessionController;

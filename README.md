@@ -23,14 +23,7 @@ npm install
 ```
 
 **Database** :
-You will need a MongoDB URI. You can go to www.mongodb.com and register for an account. 
-Create a file secret.js at the path server/data/secret.js and include in the URI you want to use.
-Your secret.js file should look something like this
-```
-const URI = 'YOUR MONGODB URI HERE';
-
-module.exports = URI;
-```
+User accounts, sessions and scores are stored in a local SQLite file. No setup is needed: the file is created automatically at server/data/numdb.sqlite the first time the server starts. To use a different location, set the DB_PATH environment variable.
 
 bundle react app with webpack by using the command
 ```

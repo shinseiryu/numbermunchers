@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const app = express();
 const path = require('path');
 const bodyParser = require('body-parser');
@@ -8,15 +7,8 @@ const userController = require('./controllers/userController');
 const sessionController = require('./controllers/sessionController');
 const cookieController = require('./controllers/cookieController');
 
-const MONGO_URI = require('./data/secret.js')
-
-mongoose.connect(MONGO_URI, {
-	useNewUrlParser: true,
-	useUnifiedTopology: true,
-	dbName: 'numdb'
-})
-	.then(() => console.log("Connected to Mongo DB"))
-	.catch((err) => console.log('ERROR CANNOT CONNECT TO MONGO DB :', err));
+// Opens (and creates if needed) the SQLite database at server/data/numdb.sqlite
+require('./db');
 
 
 app.use(express.json());
