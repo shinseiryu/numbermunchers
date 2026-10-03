@@ -8,6 +8,8 @@ module.exports = {
 	output: {
 		path: path.resolve(__dirname, 'public'),
 		filename: 'bundle.js',
+		// Default md4 hash isn't available in OpenSSL 3 (Node 17+)
+		hashFunction: 'xxhash64',
 	},
 	
 	plugins: [
