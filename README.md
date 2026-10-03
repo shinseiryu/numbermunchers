@@ -35,6 +35,13 @@ Start server with game running on localhost:3000
 ```
 npm start
 ```
+**Docker** :
+A prebuilt image is published to GitHub Container Registry. The SQLite database is stored in /data, so mount a volume there to keep accounts and scores.
+```
+docker run -d -p 3000:3000 -v numbermunchers-data:/data ghcr.io/shinseiryu/numbermunchers:sqlite
+```
+Or build it yourself with `docker build -t numbermunchers .`
+
 ----
 #Num Munchers
 
